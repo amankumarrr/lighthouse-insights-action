@@ -19,10 +19,15 @@
   "engines": {
     "node": ">=20"
   },
-  "keywords": ["github-actions", "lighthouse", "lighthouse-ci", "performance"],
+  "keywords": [
+    "github-actions",
+    "lighthouse",
+    "lighthouse-ci",
+    "performance"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@actions/artifact": "^2.3.2",
+    "@actions/artifact": "^4.0.0",
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
     "@lhci/cli": "^0.14.0"
