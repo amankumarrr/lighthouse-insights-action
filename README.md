@@ -2,56 +2,20 @@
 
 GitHub Action that runs Lighthouse CI audits and generates human-friendly Markdown reports — including pull request comparisons against a production baseline.
 
+Use this when you want a **single workflow step** instead of stitching together LHCI, custom report scripts, and artifact uploads.
+
 ## Features
 
-- Run Lighthouse CI audits from a single workflow step
-- Simple mode (URLs only) or advanced mode (custom Lighthouse config)
-- Generate Markdown reports with Performance, Accessibility, Best Practices, SEO, Bundle Size, and Unused Bundle Size
-- Compare pull request results against a production baseline
-- Highlight important pages with a ⭐ prefix
-- Publish to GitHub Step Summary
-- Upload Markdown report and optional raw `.lighthouseci` results as artifacts
-- Expose outputs for downstream workflow steps
+- Run Lighthouse CI from one action step
+- Simple mode (`urls`) or advanced mode (`config-path`)
+- Markdown report: Performance, Accessibility, Best Practices, SEO, Bundle Size, Unused Bundle
+- PR vs production score/bundle comparison
+- Important pages highlighted with ⭐
+- GitHub Step Summary
+- Optional Markdown + raw `.lighthouseci` artifact uploads
+- Outputs for downstream steps
 
-## Installation
-
-Add the action to a workflow:
-
-```yaml
-- name: Lighthouse CI
-  uses: owner/lighthouse-insights-action@v1
-  with:
-    urls: |
-      https://example.com
-      https://example.com/about
-```
-
-## Inputs
-
-| Input | Description | Default |
-| --- | --- | --- |
-| `urls` | Newline-separated list of URLs to audit (simple mode) | |
-| `config-path` | Path to a Lighthouse CI configuration file (takes precedence over `urls`) | |
-| `results-path` | Directory containing Lighthouse CI results | `.lighthouseci` |
-| `production-report` | Production baseline Markdown report for PR comparisons | `prod-lighthouse-report.md` |
-| `upload-summary` | Publish the report to the GitHub Step Summary | `true` |
-| `upload-report` | Upload the Markdown report as a workflow artifact | `true` |
-| `upload-raw-results` | Upload the raw Lighthouse CI results directory | `false` |
-| `report-artifact-name` | Artifact name for the Markdown report | `lighthouse-report` |
-| `raw-results-artifact-name` | Artifact name for raw Lighthouse CI results | `lighthouse-results` |
-| `important-paths` | Comma-separated URL paths to highlight with ⭐ | `/,/consulting/net-upgrade,/consulting/web-applications` |
-
-## Outputs
-
-| Output | Description |
-| --- | --- |
-| `report` | Generated Markdown report content |
-| `report-path` | Path to the written Markdown report file |
-| `results-path` | Path to the Lighthouse CI results directory |
-| `report-artifact-name` | Name of the uploaded Markdown report artifact (empty if not uploaded) |
-| `raw-results-artifact-name` | Name of the uploaded raw results artifact (empty if not uploaded) |
-
-## Simple usage
+## Quick start
 
 ```yaml
 name: Lighthouse
@@ -65,10 +29,11 @@ jobs:
   lighthouse:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Lighthouse CI
-        uses: owner/lighthouse-insights-action@v1
+        id: lighthouse
+        uses: amankumarrr/lighthouse-insights-action@v1
         with:
           urls: |
             https://example.com
@@ -77,13 +42,73 @@ jobs:
           upload-raw-results: true
 ```
 
-## Advanced usage
+The action will:
 
-Provide your own Lighthouse CI configuration. When `config-path` is set, it takes precedence over `urls`.
+1. Run Lighthouse CI
+2. Generate a Markdown report
+3. Publish it to the job **Summary**
+4. Upload artifacts (when enabled)
+5. Set outputs such as `report` and `report-path`
+
+## Inputs
+
+| Input | Description | Default |
+| --- | --- | --- |
+| `urls` | Newline-separated URLs to audit (simple mode) | |
+| `config-path` | Path to a Lighthouse CI config (takes precedence over `urls`) | |
+| `results-path` | Directory for Lighthouse CI results | `.lighthouseci` |
+| `production-report` | Production baseline Markdown used for PR comparisons | `prod-lighthouse-report.md` |
+| `upload-summary` | Publish the report to the GitHub Step Summary | `true` |
+| `upload-report` | Upload the Markdown report as an artifact | `true` |
+| `upload-raw-results` | Upload the raw `.lighthouseci` results | `false` |
+| `report-artifact-name` | Artifact name for the Markdown report | `lighthouse-report` |
+| `raw-results-artifact-name` | Artifact name for raw results | `lighthouse-results` |
+| `important-paths` | Comma-separated paths to highlight with ⭐ | `/,/consulting/net-upgrade,/consulting/web-applications` |
+
+## Outputs
+
+| Output | Description |
+| --- | --- |
+| `report` | Generated Markdown report content |
+| `report-path` | Path to the written Markdown report file |
+| `results-path` | Path to the Lighthouse CI results directory |
+| `report-artifact-name` | Uploaded Markdown artifact name (empty if not uploaded) |
+| `raw-results-artifact-name` | Uploaded raw-results artifact name (empty if not uploaded) |
+
+Example:
 
 ```yaml
 - name: Lighthouse CI
-  uses: owner/lighthouse-insights-action@v1
+  id: lighthouse
+  uses: amankumarrr/lighthouse-insights-action@v1
+  with:
+    urls: |
+      https://example.com
+
+- name: Use report output
+  run: echo "${{ steps.lighthouse.outputs.report-path }}"
+```
+
+## Simple usage (URLs only)
+
+```yaml
+- name: Lighthouse CI
+  uses: amankumarrr/lighthouse-insights-action@v1
+  with:
+    urls: |
+      https://example.com
+      https://example.com/about
+```
+
+The action generates a default Lighthouse CI configuration for you.
+
+## Advanced usage (custom config)
+
+When `config-path` is set, it takes precedence over `urls`.
+
+```yaml
+- name: Lighthouse CI
+  uses: amankumarrr/lighthouse-insights-action@v1
   with:
     config-path: ./.lighthouserc.json
     upload-report: true
@@ -110,11 +135,11 @@ Example `.lighthouserc.json`:
 
 On `pull_request` events the action:
 
-1. Reads the production baseline report (`production-report`)
-2. Compares scores and bundle sizes against the PR run
+1. Reads the production baseline (`production-report`)
+2. Compares scores and bundle sizes against the current run
 3. Shows improvements (⬆️) and regressions (⬇️) in the Markdown table
 
-Ensure the production report artifact or file is available in the PR job (for example via `actions/download-artifact`).
+Make the baseline available in the PR job (for example by downloading an artifact from `main`):
 
 ```yaml
 - uses: actions/download-artifact@v4
@@ -123,27 +148,25 @@ Ensure the production report artifact or file is available in the PR job (for ex
     path: .
 
 - name: Lighthouse CI
-  uses: owner/lighthouse-insights-action@v1
+  uses: amankumarrr/lighthouse-insights-action@v1
   with:
     urls: |
       https://pr-slot.example.com
     production-report: prod-lighthouse-report.md
 ```
 
-On non-PR events the action writes `prod-lighthouse-report.md` (or the path from `production-report`) for use as the next baseline.
+On non-PR events the action writes `prod-lighthouse-report.md` (or your `production-report` path) for use as the next baseline.
 
 ## Artifact uploads
 
-Uploads are independently configurable:
-
-| Input | Artifact contents |
+| Input | What gets uploaded |
 | --- | --- |
 | `upload-report: true` | Generated Markdown report |
 | `upload-raw-results: true` | Full `.lighthouseci` directory (`manifest.json`, `*.report.json`, `*.html`, …) |
 
 ```yaml
 - name: Lighthouse CI
-  uses: owner/lighthouse-insights-action@v1
+  uses: amankumarrr/lighthouse-insights-action@v1
   with:
     urls: |
       https://example.com
@@ -153,105 +176,50 @@ Uploads are independently configurable:
     raw-results-artifact-name: lighthouse-results
 ```
 
+## Complete pipeline example
+
+```yaml
+name: Lighthouse
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Lighthouse CI
+        id: lighthouse
+        uses: amankumarrr/lighthouse-insights-action@v1
+        with:
+          urls: |
+            https://example.com
+            https://example.com/about
+          upload-summary: true
+          upload-report: true
+          upload-raw-results: false
+          production-report: prod-lighthouse-report.md
+
+      - name: Show report path
+        run: echo "Report at ${{ steps.lighthouse.outputs.report-path }}"
+```
+
+After the job finishes, open the workflow run **Summary** tab to view the Markdown report.
+
+## Versioning
+
+Pin to a major version or a specific release:
+
+```yaml
+uses: amankumarrr/lighthouse-insights-action@v1
+# or
+uses: amankumarrr/lighthouse-insights-action@v1.0.0
+```
+
 ## Development
 
-Requirements: Node.js 20+
-
-```bash
-npm install
-# On Windows, if Biome postinstall fails:
-# npm install --ignore-scripts
-
-npm run lint
-npm run typecheck
-npm test
-npm run build
-```
-
-Or run everything:
-
-```bash
-npm run all
-```
-
-### Run locally and verify results
-
-Offline smoke test (no Chrome / no network) — uses bundled fixtures and checks the report shape:
-
-```bash
-npm run local:fixture
-```
-
-PR comparison against the fixture baseline:
-
-```bash
-npm run local:fixture:pr
-```
-
-Live audit against a real URL (requires Chrome/Chromium):
-
-```bash
-npm run local -- https://example.com
-npm run local:live   # audits https://aman-kumar.dev
-```
-
-On pull requests, `.github/workflows/lighthouse-pr.yml` audits `https://aman-kumar.dev` and posts/updates a PR comment with the Markdown report.
-
-On merges to `main`/`master`, the same audit runs and the report is published to the GitHub Actions **job summary** (no PR comment).
-
-Generate a report from an existing `.lighthouseci` directory (only after a successful collect):
-
-```bash
-npm run local -- https://example.com
-npm run local:report
-```
-
-Useful flags:
-
-| Flag | Purpose |
-| --- | --- |
-| `--fixture` | Use `fixtures/lighthouseci` (offline) |
-| `--skip-collect` | Skip LHCI; only generate Markdown |
-| `--pr` | PR comparison mode |
-| `--production-report <file>` | Baseline Markdown for comparisons |
-| `--out <file>` | Output path for the generated report |
-| `--config <path>` | Advanced mode with a custom LHCI config |
-| `--help` | Show CLI help |
-
-Successful runs print the Markdown table, write a report file, and exit `0` only if verification passes.
-
-### Project layout
-
-```text
-src/
-  index.ts                 # Action orchestrator
-  lighthouse/              # CI runner and config generation
-  parser/                  # Manifest, report, and treemap parsing
-  report/                  # Markdown generation and PR comparison
-  github/                  # Artifacts, summary, outputs
-  models/                  # Shared types
-  utils/                   # Filesystem, glob, logger helpers
-scripts/
-  run-local.ts                    # Local runner / verifier
-  generate-lighthouse-report.py   # Reference implementation (not used at runtime)
-fixtures/
-  lighthouseci/                   # Sample LHCI results for offline runs
-```
-
-Report generation behavior is intentionally aligned with `scripts/generate-lighthouse-report.py`.
-
-## Release process
-
-1. Update the version in `package.json` if needed
-2. Run `npm run all` and fix any failures
-3. Commit the built `dist/` directory (required for GitHub Actions)
-4. Tag and push a release:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-5. Optionally move the major version tag (`v1`) to the new release
-
-Consumers should pin to a major version tag (for example `@v1`) or a specific release tag.
+Contributor setup, local verification, project layout, and release steps live in **[docs/development.md](docs/development.md)**.
