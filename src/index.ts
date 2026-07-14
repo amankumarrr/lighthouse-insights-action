@@ -52,6 +52,7 @@ async function run(): Promise<void> {
     productionDomain: inputs.productionDomain,
     stagingDomain: inputs.stagingDomain,
     defaultDomain: inputs.defaultDomain,
+    isPullRequest,
   });
 
   core.info(`Event: ${github.context.eventName}`);

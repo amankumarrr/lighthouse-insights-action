@@ -54,13 +54,17 @@ export interface DomainUrlOptions {
   productionDomain: string;
   stagingDomain: string;
   defaultDomain: string;
+  /** When both domains are set: PR → staging only; otherwise → production only */
+  isPullRequest?: boolean;
 }
 
 /**
  * Builds audit URLs from paths + domains.
  *
- * - If both production and staging domains are set → audit both domains × all paths
- * - Otherwise → audit default domain (falling back to whichever single domain is set) × all paths
+ * - If both production and staging are set:
+ *   - pull_request → staging × paths (compared later to production baseline)
+ *   - otherwise → production × paths (writes the baseline)
+ * - Otherwise → default domain (or the single provided domain) × paths
  */
 export function resolveUrlsFromDomains(options: DomainUrlOptions): string[] {
   const paths = options.paths;
@@ -71,12 +75,11 @@ export function resolveUrlsFromDomains(options: DomainUrlOptions): string[] {
   const productionDomain = options.productionDomain.trim();
   const stagingDomain = options.stagingDomain.trim();
   const defaultDomain = options.defaultDomain.trim();
+  const isPullRequest = options.isPullRequest === true;
 
   if (productionDomain && stagingDomain) {
-    return [
-      ...paths.map((pagePath) => joinDomainAndPath(productionDomain, pagePath)),
-      ...paths.map((pagePath) => joinDomainAndPath(stagingDomain, pagePath)),
-    ];
+    const domain = isPullRequest ? stagingDomain : productionDomain;
+    return paths.map((pagePath) => joinDomainAndPath(domain, pagePath));
   }
 
   const domain = defaultDomain || productionDomain || stagingDomain;
@@ -103,6 +106,7 @@ export function resolveAuditUrls(options: {
   productionDomain: string;
   stagingDomain: string;
   defaultDomain: string;
+  isPullRequest?: boolean;
 }): string[] {
   if (options.urls.length > 0) {
     return options.urls;
@@ -114,6 +118,7 @@ export function resolveAuditUrls(options: {
       productionDomain: options.productionDomain,
       stagingDomain: options.stagingDomain,
       defaultDomain: options.defaultDomain,
+      isPullRequest: options.isPullRequest,
     });
   }
 

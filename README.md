@@ -8,7 +8,7 @@ Use this when you want a **single workflow step** instead of stitching together 
 
 - Run Lighthouse CI from one action step
 - Simple mode (`urls`), domain+paths mode, or advanced mode (`config-path`)
-- Audit production + staging together when both domains are configured
+- With production + staging domains: main audits production, PRs audit staging and show score deltas
 - Markdown report: Performance, Accessibility, Best Practices, SEO, Bundle Size, Unused Bundle
 - PR vs production score/bundle comparison
 - Important pages highlighted with ⭐
@@ -117,22 +117,21 @@ The action does **not** auto-detect `.lighthouserc` / `.lighthouserc.json`.
 paths: |
   /
   /about
-  /pricing
 production-domain: https://www.example.com
 staging-domain: https://staging.example.com
 default-domain: https://example.com
 ```
 
-Behavior:
+Behavior when **both** `production-domain` and `staging-domain` are set:
 
-| Configured | URLs audited |
-| --- | --- |
-| `paths` + **both** `production-domain` and `staging-domain` | Every path on **both** domains |
-| `paths` + only `default-domain` (or only one of prod/staging) | Every path on that **single** domain |
+| Event | What is audited | Report |
+| --- | --- | --- |
+| `push` / non-PR | **Production** URLs only | Absolute scores; writes `prod-lighthouse-report.md` baseline |
+| `pull_request` | **Staging** URLs only | Staging URL + ⬆️/⬇️ deltas vs production baseline (matched by path) |
 
-Examples:
+When only `default-domain` (or a single domain) is set, that domain is audited for every event.
 
-**Both domains** (production + staging):
+Example:
 
 ```yaml
 - uses: amankumarrr/lighthouse-insights-action@v1
@@ -142,30 +141,13 @@ Examples:
       /about
     production-domain: https://www.example.com
     staging-domain: https://staging.example.com
+    comment-on-pr: true
 ```
 
-Audits:
+- On **main**: audits `https://www.example.com/` and `.../about`, saves baseline artifact
+- On **PR**: audits `https://staging.example.com/` and `.../about`, compares to baseline by path (`/` ↔ `/`)
 
-- `https://www.example.com/`
-- `https://www.example.com/about`
-- `https://staging.example.com/`
-- `https://staging.example.com/about`
-
-**Default domain only:**
-
-```yaml
-- uses: amankumarrr/lighthouse-insights-action@v1
-  with:
-    paths: |
-      /
-      /about
-    default-domain: https://example.com
-```
-
-Audits:
-
-- `https://example.com/`
-- `https://example.com/about`
+For deltas on PRs, make `prod-lighthouse-report.md` available (download the artifact from `main`). Without it, the PR report still lists staging URLs with absolute scores.
 
 `.lighthouserc` is only for **how LHCI runs** when you pass `config-path`.  
 It is **not** used for PR vs production comparison.

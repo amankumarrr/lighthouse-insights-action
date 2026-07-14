@@ -14,10 +14,10 @@ inputs:
     description: Newline or comma-separated URL paths (e.g. /,/about). Used with domain inputs when urls is empty
     required: false
   production-domain:
-    description: Production origin (e.g. https://www.example.com). With staging-domain + paths, both domains are audited
+    description: Production origin (e.g. https://www.example.com). With staging-domain + paths, non-PR runs audit production
     required: false
   staging-domain:
-    description: Staging/preview origin (e.g. https://staging.example.com). With production-domain + paths, both domains are audited
+    description: Staging/preview origin (e.g. https://staging.example.com). With production-domain + paths, PR runs audit staging and compare to the production baseline
     required: false
   default-domain:
     description: Default origin used with paths when production-domain and staging-domain are not both set

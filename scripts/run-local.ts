@@ -263,6 +263,7 @@ async function main(): Promise<void> {
     productionDomain: options.productionDomain,
     stagingDomain: options.stagingDomain,
     defaultDomain: options.defaultDomain,
+    isPullRequest: options.isPullRequest,
   });
 
   if (options.dryRun) {
