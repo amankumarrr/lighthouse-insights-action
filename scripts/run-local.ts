@@ -4,14 +4,19 @@
  *
  * Examples:
  *   npm run local -- https://example.com
- *   npm run local -- --urls https://example.com
+ *   npm run local:domains:dry
+ *   npm run local:default:dry
  *   npm run local:fixture
- *   npm run local:report
  */
 import { appendFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { runLighthouse } from '../src/lighthouse/runner';
-import { parseImportantPaths, parseUrls } from '../src/lighthouse/urls';
+import {
+  parseImportantPaths,
+  parsePaths,
+  parseUrls,
+  resolveAuditUrls,
+} from '../src/lighthouse/urls';
 import type { PageScores } from '../src/models/lighthouse';
 import { readManifest } from '../src/parser/manifest';
 import { parseProdReport } from '../src/report/comparison';
@@ -52,6 +57,10 @@ function fail(message: string): never {
 
 interface CliOptions {
   urls: string[];
+  paths: string[];
+  productionDomain: string;
+  stagingDomain: string;
+  defaultDomain: string;
   configPath: string;
   resultsPath: string;
   productionReport: string;
@@ -60,6 +69,7 @@ interface CliOptions {
   skipCollect: boolean;
   useFixture: boolean;
   isPullRequest: boolean;
+  dryRun: boolean;
 }
 
 const DEFAULT_IMPORTANT = '/,/consulting/net-upgrade,/consulting/web-applications';
@@ -70,26 +80,26 @@ Lighthouse Insights - local runner
 
 Usage:
   npm run local -- <url> [more-urls...]
-  npm run local -- [options]
+  npm run local -- --paths /,/about --production-domain https://... --staging-domain https://...
+  npm run local -- --paths /,/about --default-domain https://...
+  npm run local -- --dry-run --paths / --production-domain https://a --staging-domain https://b
 
 Options:
-  --urls <list>               Comma-separated URLs (simple mode)
-  --config <path>             Lighthouse CI config path (advanced mode)
-  --results-path <dir>        Results directory (default: .lighthouseci)
-  --production-report <file>  Baseline report for PR comparison
-  --out <file>                Output Markdown path
-  --important-paths <list>    Comma-separated paths to star-highlight
-  --skip-collect              Skip LHCI; generate report from existing results
-  --fixture                   Use bundled fixtures (offline smoke test)
-  --pr                        Generate PR comparison report
-  --help                      Show this help
-
-Examples:
-  npm run local:fixture
-  npm run local -- https://example.com
-  npm run local -- https://example.com https://example.com/about
-  npm run local:report
-  npm run local:fixture:pr
+  --urls <list>                 Comma-separated full URLs
+  --paths <list>                Comma/newline-separated paths (e.g. /,/about)
+  --production-domain <origin>  Production origin
+  --staging-domain <origin>     Staging/preview origin
+  --default-domain <origin>     Default origin when both domains are not set
+  --config <path>               Lighthouse CI config path
+  --results-path <dir>          Results directory (default: .lighthouseci)
+  --production-report <file>    Baseline report for PR comparison
+  --out <file>                  Output Markdown path
+  --important-paths <list>      Comma-separated paths to star-highlight
+  --dry-run                     Print resolved URLs only (no Lighthouse)
+  --skip-collect                Skip LHCI; generate report from existing results
+  --fixture                     Use bundled fixtures (offline smoke test)
+  --pr                          Generate PR comparison report
+  --help                        Show this help
 `);
 }
 
@@ -100,6 +110,10 @@ function isUrl(value: string): boolean {
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     urls: [],
+    paths: [],
+    productionDomain: '',
+    stagingDomain: '',
+    defaultDomain: '',
     configPath: '',
     resultsPath: '.lighthouseci',
     productionReport: 'prod-lighthouse-report.md',
@@ -108,6 +122,7 @@ function parseArgs(argv: string[]): CliOptions {
     skipCollect: false,
     useFixture: false,
     isPullRequest: false,
+    dryRun: false,
   };
 
   const positionalUrls: string[] = [];
@@ -124,6 +139,22 @@ function parseArgs(argv: string[]): CliOptions {
         break;
       case '--urls':
         options.urls = parseUrls((next ?? '').replace(/,/g, '\n'));
+        i++;
+        break;
+      case '--paths':
+        options.paths = parsePaths(next ?? '');
+        i++;
+        break;
+      case '--production-domain':
+        options.productionDomain = next ?? '';
+        i++;
+        break;
+      case '--staging-domain':
+        options.stagingDomain = next ?? '';
+        i++;
+        break;
+      case '--default-domain':
+        options.defaultDomain = next ?? '';
         i++;
         break;
       case '--config':
@@ -145,6 +176,9 @@ function parseArgs(argv: string[]): CliOptions {
       case '--important-paths':
         options.importantPaths = parseImportantPaths(next ?? DEFAULT_IMPORTANT);
         i++;
+        break;
+      case '--dry-run':
+        options.dryRun = true;
         break;
       case '--skip-collect':
         options.skipCollect = true;
@@ -223,22 +257,44 @@ async function main(): Promise<void> {
   const logger = createLogger();
   logger.info(`Args: ${process.argv.slice(2).join(' ') || '(none)'}`);
 
+  const resolvedUrls = resolveAuditUrls({
+    urls: options.urls,
+    paths: options.paths,
+    productionDomain: options.productionDomain,
+    stagingDomain: options.stagingDomain,
+    defaultDomain: options.defaultDomain,
+  });
+
+  if (options.dryRun) {
+    if (resolvedUrls.length === 0) {
+      fail('Dry run requires --urls, or --paths with domain inputs');
+    }
+    process.stdout.write(`\n[dry-run] Resolved ${resolvedUrls.length} URL(s):\n`);
+    for (const url of resolvedUrls) {
+      process.stdout.write(`  - ${url}\n`);
+    }
+    process.stdout.write('\n[ok] Dry run complete (no Lighthouse collect)\n');
+    return;
+  }
+
   if (options.useFixture) {
     options.resultsPath = resolveFixtureResultsPath();
     logger.info(`Using fixture results: ${options.resultsPath}`);
   }
 
   if (!options.skipCollect) {
-    if (!options.configPath && options.urls.length === 0) {
+    if (!options.configPath && resolvedUrls.length === 0) {
       printHelp();
-      fail('Provide a URL, --urls, --config, --skip-collect, or --fixture');
+      fail(
+        'Provide a URL, --urls, --paths with domains, --config, --skip-collect, --fixture, or --dry-run',
+      );
     }
 
     logger.info(
-      `Running Lighthouse CI collect for: ${options.urls.join(', ') || options.configPath}`,
+      `Running Lighthouse CI collect for: ${resolvedUrls.join(', ') || options.configPath}`,
     );
     options.resultsPath = await runLighthouse({
-      urls: options.urls,
+      urls: resolvedUrls,
       configPath: options.configPath,
       resultsPath: options.resultsPath,
       logger,

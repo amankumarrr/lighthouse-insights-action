@@ -15,6 +15,10 @@
     "local:fixture:pr": "node --import tsx scripts/run-local.ts --fixture --pr --production-report fixtures/prod-lighthouse-report.md --out local-pr-lighthouse-report.md",
     "local:report": "node --import tsx scripts/run-local.ts --skip-collect",
     "local:live": "node --import tsx scripts/run-local.ts https://aman-kumar.dev --out prod-lighthouse-report.md",
+    "local:domains:dry": "node --import tsx scripts/run-local.ts --dry-run --paths /,/about --production-domain https://aman-kumar.dev --staging-domain https://aman-kumar-blogs-git-main-amankumarrrs-projects.vercel.app",
+    "local:default:dry": "node --import tsx scripts/run-local.ts --dry-run --paths /,/about --default-domain https://aman-kumar.dev",
+    "local:domains": "node --import tsx scripts/run-local.ts --paths /,/about --production-domain https://aman-kumar.dev --staging-domain https://aman-kumar-blogs-git-main-amankumarrrs-projects.vercel.app --out local-both-domains-report.md",
+    "local:default": "node --import tsx scripts/run-local.ts --paths /,/about --default-domain https://aman-kumar.dev --out local-default-domain-report.md",
     "all": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "engines": {
