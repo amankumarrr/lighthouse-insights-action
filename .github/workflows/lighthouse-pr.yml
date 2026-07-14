@@ -1,11 +1,13 @@
-name: Lighthouse PR Report
+name: Lighthouse Report
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, master]
 
 concurrency:
-  group: lighthouse-pr-${{ github.event.pull_request.number }}
+  group: lighthouse-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -14,7 +16,7 @@ permissions:
 
 jobs:
   lighthouse:
-    name: Audit aman-kumar.dev and comment on PR
+    name: Audit aman-kumar.dev
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -42,11 +44,13 @@ jobs:
           {
             echo "## Lighthouse report — https://aman-kumar.dev"
             echo
+            echo "Event: \`${{ github.event_name }}\` · Ref: \`${{ github.ref_name }}\`"
+            echo
             cat prod-lighthouse-report.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Comment report on PR
-        if: hashFiles('prod-lighthouse-report.md') != ''
+        if: github.event_name == 'pull_request' && hashFiles('prod-lighthouse-report.md') != ''
         uses: actions/github-script@v8
         with:
           script: |

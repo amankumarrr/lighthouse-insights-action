@@ -197,6 +197,8 @@ npm run local:live   # audits https://aman-kumar.dev
 
 On pull requests, `.github/workflows/lighthouse-pr.yml` audits `https://aman-kumar.dev` and posts/updates a PR comment with the Markdown report.
 
+On merges to `main`/`master`, the same audit runs and the report is published to the GitHub Actions **job summary** (no PR comment).
+
 Generate a report from an existing `.lighthouseci` directory (only after a successful collect):
 
 ```bash
