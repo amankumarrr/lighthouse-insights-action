@@ -11,3 +11,9 @@ local-lighthouse-report.md
 local-pr-lighthouse-report.md
 local-run.log
 local-debug.txt
+
+local-debug-*.txt
+local-debug-*.log
+
+
+AGENTS.md
