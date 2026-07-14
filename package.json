@@ -14,6 +14,7 @@
     "local:fixture": "node --import tsx scripts/run-local.ts --fixture",
     "local:fixture:pr": "node --import tsx scripts/run-local.ts --fixture --pr --production-report fixtures/prod-lighthouse-report.md --out local-pr-lighthouse-report.md",
     "local:report": "node --import tsx scripts/run-local.ts --skip-collect",
+    "local:live": "node --import tsx scripts/run-local.ts https://aman-kumar.dev --out prod-lighthouse-report.md",
     "all": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "engines": {
@@ -22,7 +23,7 @@
   "keywords": ["github-actions", "lighthouse", "lighthouse-ci", "performance"],
   "license": "MIT",
   "dependencies": {
-    "@actions/artifact": "^2.3.2",
+    "@actions/artifact": "^4.0.0",
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
     "@lhci/cli": "^0.14.0"

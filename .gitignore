@@ -5,15 +5,13 @@ node_modules/
 lighthouserc.generated.json
 coverage/
 *.log
-lighthouse-report.md
-prod-lighthouse-report.md
-local-lighthouse-report.md
-local-pr-lighthouse-report.md
-local-run.log
-local-debug.txt
-
-local-debug-*.txt
-local-debug-*.log
-
+/lighthouse-report.md
+/prod-lighthouse-report.md
+/local-lighthouse-report.md
+/local-pr-lighthouse-report.md
+/local-run.log
+/local-debug.txt
+/local-debug-*.txt
+/local-debug-*.log
 
 AGENTS.md

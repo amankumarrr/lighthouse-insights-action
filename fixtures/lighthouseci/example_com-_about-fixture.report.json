@@ -2,9 +2,7 @@
   "audits": {
     "script-treemap-data": {
       "details": {
-        "nodes": [
-          { "resourceBytes": 1572864, "unusedBytes": 524288 }
-        ]
+        "nodes": [{ "resourceBytes": 1572864, "unusedBytes": 524288 }]
       }
     }
   }
