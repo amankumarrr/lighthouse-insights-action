@@ -30,3 +30,8 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Local fixture verification
+        run: |
+          npm run local:fixture
+          npm run local:fixture:pr

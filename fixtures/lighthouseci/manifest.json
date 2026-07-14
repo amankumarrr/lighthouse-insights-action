@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://example.com/",
+    "isRepresentativeRun": true,
+    "htmlPath": "fixtures/lighthouseci/example_com-_-fixture.report.html",
+    "jsonPath": "fixtures/lighthouseci/example_com-_-fixture.report.json",
+    "summary": {
+      "performance": 0.9,
+      "accessibility": 0.95,
+      "best-practices": 0.88,
+      "seo": 1
+    }
+  },
+  {
+    "url": "https://example.com/about",
+    "isRepresentativeRun": true,
+    "htmlPath": "fixtures/lighthouseci/example_com-_about-fixture.report.html",
+    "jsonPath": "fixtures/lighthouseci/example_com-_about-fixture.report.json",
+    "summary": {
+      "performance": 0.8,
+      "accessibility": 0.9,
+      "best-practices": 0.85,
+      "seo": 0.92
+    }
+  }
+]

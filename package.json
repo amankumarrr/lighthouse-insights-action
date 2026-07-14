@@ -10,6 +10,10 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "local": "node --import tsx scripts/run-local.ts",
+    "local:fixture": "node --import tsx scripts/run-local.ts --fixture",
+    "local:fixture:pr": "node --import tsx scripts/run-local.ts --fixture --pr --production-report fixtures/prod-lighthouse-report.md --out local-pr-lighthouse-report.md",
+    "local:report": "node --import tsx scripts/run-local.ts --skip-collect",
     "all": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "engines": {
@@ -27,6 +31,7 @@
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^20.17.30",
     "@vercel/ncc": "^0.38.3",
+    "tsx": "^4.23.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
   }

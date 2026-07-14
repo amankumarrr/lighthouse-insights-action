@@ -159,6 +159,9 @@ Requirements: Node.js 20+
 
 ```bash
 npm install
+# On Windows, if Biome postinstall fails:
+# npm install --ignore-scripts
+
 npm run lint
 npm run typecheck
 npm test
@@ -170,6 +173,47 @@ Or run everything:
 ```bash
 npm run all
 ```
+
+### Run locally and verify results
+
+Offline smoke test (no Chrome / no network) — uses bundled fixtures and checks the report shape:
+
+```bash
+npm run local:fixture
+```
+
+PR comparison against the fixture baseline:
+
+```bash
+npm run local:fixture:pr
+```
+
+Live audit against a real URL (requires Chrome/Chromium):
+
+```bash
+npm run local -- https://example.com
+```
+
+Generate a report from an existing `.lighthouseci` directory (only after a successful collect):
+
+```bash
+npm run local -- https://example.com
+npm run local:report
+```
+
+Useful flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--fixture` | Use `fixtures/lighthouseci` (offline) |
+| `--skip-collect` | Skip LHCI; only generate Markdown |
+| `--pr` | PR comparison mode |
+| `--production-report <file>` | Baseline Markdown for comparisons |
+| `--out <file>` | Output path for the generated report |
+| `--config <path>` | Advanced mode with a custom LHCI config |
+| `--help` | Show CLI help |
+
+Successful runs print the Markdown table, write a report file, and exit `0` only if verification passes.
 
 ### Project layout
 
@@ -183,7 +227,10 @@ src/
   models/                  # Shared types
   utils/                   # Filesystem, glob, logger helpers
 scripts/
+  run-local.ts                    # Local runner / verifier
   generate-lighthouse-report.py   # Reference implementation (not used at runtime)
+fixtures/
+  lighthouseci/                   # Sample LHCI results for offline runs
 ```
 
 Report generation behavior is intentionally aligned with `scripts/generate-lighthouse-report.py`.
