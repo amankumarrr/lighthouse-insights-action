@@ -56,6 +56,9 @@ export async function generateLighthouseMarkdown(
     const prodScore = prodScores[extractPath(result.url)];
     if (prodScore) {
       lines.push(formatComparisonRow(row, prodScore));
+    } else {
+      // No baseline for this path yet — still show absolute scores on the PR.
+      lines.push(formatProductionRow(row));
     }
   }
 
