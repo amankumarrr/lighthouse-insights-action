@@ -11,6 +11,7 @@ import type { ActionInputs, PageScores } from './models/lighthouse';
 import { readManifest } from './parser/manifest';
 import { parseProdReport } from './report/comparison';
 import { generateLighthouseMarkdown } from './report/markdown';
+import { buildScoresFromManifest } from './report/scores-from-manifest';
 import { writeTextFile } from './utils/filesystem';
 import type { Logger } from './utils/logger';
 
@@ -73,8 +74,26 @@ async function run(): Promise<void> {
   core.info(`Reading manifest from ${resultsPath}`);
   const manifest = await readManifest(resultsPath);
 
+  const hasBothDomains =
+    Boolean(inputs.productionDomain.trim()) && Boolean(inputs.stagingDomain.trim());
+
   let prodScores: Record<string, PageScores> = {};
-  if (isPullRequest) {
+  let includeDomain: string | undefined;
+
+  if (isPullRequest && hasBothDomains) {
+    // Live production scores from this run — no baseline file required.
+    core.info(`Building production baseline scores from ${inputs.productionDomain}`);
+    prodScores = await buildScoresFromManifest(
+      manifest,
+      resultsPath,
+      inputs.productionDomain,
+      actionsLogger,
+    );
+    includeDomain = inputs.stagingDomain;
+    core.info(
+      `PR report will show staging URLs only (${inputs.stagingDomain}) with deltas vs production`,
+    );
+  } else if (isPullRequest) {
     core.info(`Parsing production report: ${inputs.productionReport}`);
     prodScores = await parseProdReport(inputs.productionReport, actionsLogger);
   }
@@ -84,6 +103,7 @@ async function run(): Promise<void> {
     isPullRequest,
     importantPaths: inputs.importantPaths,
     prodScores,
+    includeDomain,
     logger: actionsLogger,
   });
 

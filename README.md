@@ -126,28 +126,10 @@ Behavior when **both** `production-domain` and `staging-domain` are set:
 
 | Event | What is audited | Report |
 | --- | --- | --- |
-| `push` / non-PR | **Production** URLs only | Absolute scores; writes `prod-lighthouse-report.md` baseline |
-| `pull_request` | **Staging** URLs only | Staging URL + ⬆️/⬇️ deltas vs production baseline (matched by path) |
+| `push` / non-PR | **Production** URLs only | Absolute scores; writes baseline |
+| `pull_request` | **Production + staging** | **Staging URLs only**, with ⬆️/⬇️ vs production from the same run |
 
-When only `default-domain` (or a single domain) is set, that domain is audited for every event.
-
-Example:
-
-```yaml
-- uses: amankumarrr/lighthouse-insights-action@v1
-  with:
-    paths: |
-      /
-      /about
-    production-domain: https://www.example.com
-    staging-domain: https://staging.example.com
-    comment-on-pr: true
-```
-
-- On **main**: audits `https://www.example.com/` and `.../about`, saves baseline artifact
-- On **PR**: audits `https://staging.example.com/` and `.../about`, compares to baseline by path (`/` ↔ `/`)
-
-For deltas on PRs, make `prod-lighthouse-report.md` available (download the artifact from `main`). Without it, the PR report still lists staging URLs with absolute scores.
+No baseline artifact is required for PR deltas when both domains are configured — production is audited in the same PR job and used only for comparison.
 
 `.lighthouserc` is only for **how LHCI runs** when you pass `config-path`.  
 It is **not** used for PR vs production comparison.

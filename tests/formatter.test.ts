@@ -125,7 +125,7 @@ https://example.com/about
 describe('resolveUrlsFromDomains', () => {
   const paths = ['/', '/about'];
 
-  it('on PR audits staging only when both domains are set', () => {
+  it('on PR collects production and staging when both domains are set', () => {
     expect(
       resolveUrlsFromDomains({
         paths,
@@ -134,7 +134,12 @@ describe('resolveUrlsFromDomains', () => {
         defaultDomain: 'https://ignored.example.com',
         isPullRequest: true,
       }),
-    ).toEqual(['https://staging.example.com/', 'https://staging.example.com/about']);
+    ).toEqual([
+      'https://www.example.com/',
+      'https://www.example.com/about',
+      'https://staging.example.com/',
+      'https://staging.example.com/about',
+    ]);
   });
 
   it('on non-PR audits production only when both domains are set', () => {

@@ -1,3 +1,4 @@
+import { urlBelongsToDomain } from '../lighthouse/urls';
 import type { ManifestResult, PageReportRow, PageScores } from '../models/lighthouse';
 import { getTotalAndUnusedBytesForUrl } from '../parser/treemap';
 import type { Logger } from '../utils/logger';
@@ -16,6 +17,8 @@ export interface GenerateMarkdownOptions {
   isPullRequest: boolean;
   importantPaths: Set<string>;
   prodScores?: Record<string, PageScores>;
+  /** When set, only include URLs belonging to this domain (e.g. staging on PRs). */
+  includeDomain?: string;
   logger?: Logger;
 }
 
@@ -32,6 +35,7 @@ export async function generateLighthouseMarkdown(
     isPullRequest,
     importantPaths,
     prodScores = {},
+    includeDomain,
     logger = consoleLogger,
   } = options;
 
@@ -46,6 +50,10 @@ export async function generateLighthouseMarkdown(
   ];
 
   for (const result of manifest) {
+    if (includeDomain && !urlBelongsToDomain(result.url, includeDomain)) {
+      continue;
+    }
+
     const row = await buildPageRow(result, resultsPath, importantPaths, logger);
 
     if (!isPullRequest) {

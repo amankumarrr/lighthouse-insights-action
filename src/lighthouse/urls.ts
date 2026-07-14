@@ -49,12 +49,28 @@ export function joinDomainAndPath(domain: string, pagePath: string): string {
   return `${base}${normalizedPath}`;
 }
 
+/** True when the URL's origin matches the configured domain origin. */
+export function urlBelongsToDomain(url: string, domain: string): boolean {
+  const normalizedDomain = normalizeDomain(domain);
+  if (!normalizedDomain) {
+    return false;
+  }
+  try {
+    const page = new URL(url.startsWith('⭐ ') ? url.slice(2).trim() : url);
+    const base = new URL(
+      normalizedDomain.includes('://') ? normalizedDomain : `https://${normalizedDomain}`,
+    );
+    return page.origin === base.origin;
+  } catch {
+    return url.startsWith(normalizedDomain);
+  }
+}
+
 export interface DomainUrlOptions {
   paths: string[];
   productionDomain: string;
   stagingDomain: string;
   defaultDomain: string;
-  /** When both domains are set: PR → staging only; otherwise → production only */
   isPullRequest?: boolean;
 }
 
@@ -62,8 +78,8 @@ export interface DomainUrlOptions {
  * Builds audit URLs from paths + domains.
  *
  * - If both production and staging are set:
- *   - pull_request → staging × paths (compared later to production baseline)
- *   - otherwise → production × paths (writes the baseline)
+ *   - pull_request → collect production + staging (compare in-run; report shows staging only)
+ *   - otherwise → production only (baseline)
  * - Otherwise → default domain (or the single provided domain) × paths
  */
 export function resolveUrlsFromDomains(options: DomainUrlOptions): string[] {
@@ -78,8 +94,13 @@ export function resolveUrlsFromDomains(options: DomainUrlOptions): string[] {
   const isPullRequest = options.isPullRequest === true;
 
   if (productionDomain && stagingDomain) {
-    const domain = isPullRequest ? stagingDomain : productionDomain;
-    return paths.map((pagePath) => joinDomainAndPath(domain, pagePath));
+    if (isPullRequest) {
+      return [
+        ...paths.map((pagePath) => joinDomainAndPath(productionDomain, pagePath)),
+        ...paths.map((pagePath) => joinDomainAndPath(stagingDomain, pagePath)),
+      ];
+    }
+    return paths.map((pagePath) => joinDomainAndPath(productionDomain, pagePath));
   }
 
   const domain = defaultDomain || productionDomain || stagingDomain;
