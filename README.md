@@ -72,6 +72,7 @@ The action will:
 | `upload-summary` | Publish the report to the GitHub Step Summary | `true` |
 | `upload-report` | Upload the Markdown report as an artifact | `true` |
 | `upload-raw-results` | Upload the raw `.lighthouseci` results | `false` |
+| `comment-on-pr` | On `pull_request`, create/update a sticky PR comment with the report | `false` |
 | `report-artifact-name` | Artifact name for the Markdown report | `lighthouse-report` |
 | `raw-results-artifact-name` | Artifact name for raw results | `lighthouse-results` |
 | `important-paths` | Comma-separated paths to highlight with ⭐ | `/,/consulting/net-upgrade,/consulting/web-applications` |
@@ -293,6 +294,41 @@ Flow:
 1. **main** writes `prod-lighthouse-report.md` and uploads artifact `lighthouse-report`
 2. **PR** downloads that file, audits preview URLs, writes `lighthouse-report.md` with ⬆️/⬇️ deltas
 3. Paths must match (`/` ↔ `/`, `/about` ↔ `/about`); hosts can differ
+
+## Comment on pull requests
+
+Set `comment-on-pr: true` to post (or update) a sticky PR comment with the Markdown report. No extra comment action is required.
+
+The job needs write access to pull requests:
+
+```yaml
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Lighthouse CI
+        uses: amankumarrr/lighthouse-insights-action@v1
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        with:
+          paths: |
+            /
+          production-domain: https://www.example.com
+          staging-domain: https://staging.example.com
+          comment-on-pr: true
+          upload-summary: true
+```
+
+On non-PR events the flag is ignored (with a warning).
 
 ## Artifact uploads
 

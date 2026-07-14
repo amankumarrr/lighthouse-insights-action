@@ -51,6 +51,7 @@ export interface ActionInputs {
   uploadSummary: boolean;
   uploadReport: boolean;
   uploadRawResults: boolean;
+  commentOnPr: boolean;
   reportArtifactName: string;
   rawResultsArtifactName: string;
   importantPaths: Set<string>;

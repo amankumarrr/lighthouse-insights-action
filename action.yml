@@ -45,6 +45,10 @@ inputs:
     description: Whether to upload the raw Lighthouse CI results directory as an artifact
     required: false
     default: 'false'
+  comment-on-pr:
+    description: When true on pull_request events, create or update a sticky PR comment with the Markdown report
+    required: false
+    default: 'false'
   report-artifact-name:
     description: Artifact name for the Markdown report
     required: false
@@ -104,9 +108,11 @@ runs:
         "INPUT_UPLOAD-SUMMARY": ${{ inputs.upload-summary }}
         "INPUT_UPLOAD-REPORT": ${{ inputs.upload-report }}
         "INPUT_UPLOAD-RAW-RESULTS": ${{ inputs.upload-raw-results }}
+        "INPUT_COMMENT-ON-PR": ${{ inputs.comment-on-pr }}
         "INPUT_REPORT-ARTIFACT-NAME": ${{ inputs.report-artifact-name }}
         "INPUT_RAW-RESULTS-ARTIFACT-NAME": ${{ inputs.raw-results-artifact-name }}
         "INPUT_IMPORTANT-PATHS": ${{ inputs.important-paths }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: node "${{ github.action_path }}/dist/index.js"
 
     # Composite run: steps do not receive ACTIONS_RUNTIME_TOKEN, so upload via the official action.

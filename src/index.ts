@@ -2,6 +2,7 @@ import path from 'node:path';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { uploadRawResultsArtifact, uploadReportArtifact } from './github/artifact';
+import { commentReportOnPullRequest } from './github/comment';
 import { setActionOutputs } from './github/outputs';
 import { publishStepSummary } from './github/summary';
 import { runLighthouse } from './lighthouse/runner';
@@ -32,6 +33,7 @@ function getInputs(): ActionInputs {
     uploadSummary: core.getBooleanInput('upload-summary'),
     uploadReport: core.getBooleanInput('upload-report'),
     uploadRawResults: core.getBooleanInput('upload-raw-results'),
+    commentOnPr: core.getBooleanInput('comment-on-pr'),
     reportArtifactName: core.getInput('report-artifact-name') || 'lighthouse-report',
     rawResultsArtifactName: core.getInput('raw-results-artifact-name') || 'lighthouse-results',
     importantPaths: parseImportantPaths(
@@ -94,6 +96,18 @@ async function run(): Promise<void> {
   if (inputs.uploadSummary) {
     await publishStepSummary(report);
     core.info('Published report to GitHub Step Summary');
+  }
+
+  if (inputs.commentOnPr) {
+    try {
+      await commentReportOnPullRequest(report);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      core.warning(`Failed to comment on PR: ${message}`);
+      core.warning(
+        'Ensure the job has `permissions: pull-requests: write` (and that the PR is not from a fork with read-only token).',
+      );
+    }
   }
 
   let reportArtifactName = '';
