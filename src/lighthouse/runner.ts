@@ -6,6 +6,8 @@ import type { Logger } from '../utils/logger';
 import { consoleLogger } from '../utils/logger';
 import { writeTemporaryConfig } from './config';
 
+const LHCI_PACKAGE = '@lhci/cli@0.14.0';
+
 export interface RunLighthouseOptions {
   urls: string[];
   configPath: string;
@@ -14,8 +16,14 @@ export interface RunLighthouseOptions {
   logger?: Logger;
 }
 
+interface LhciInvocation {
+  command: string;
+  prefixArgs: string[];
+  shell: boolean;
+}
+
 /**
- * Runs Lighthouse CI collect, producing results under resultsPath.
+ * Runs Lighthouse CI collect + filesystem upload, producing results under resultsPath.
  */
 export async function runLighthouse(options: RunLighthouseOptions): Promise<string> {
   const {
@@ -40,18 +48,18 @@ export async function runLighthouse(options: RunLighthouseOptions): Promise<stri
     logger.info(`Using Lighthouse config: ${resolvedConfigPath}`);
   }
 
-  const { command, prefixArgs } = resolveLhciInvocation(logger);
+  const invocation = resolveLhciInvocation(logger);
 
   // collect alone writes lhr-*.json; upload (filesystem) produces manifest.json
   // and URL-named *.report.json files expected by the report generator.
-  const collectArgs = [...prefixArgs, 'collect', `--config=${resolvedConfigPath}`];
-  const uploadArgs = [...prefixArgs, 'upload', `--config=${resolvedConfigPath}`];
+  const collectArgs = [...invocation.prefixArgs, 'collect', `--config=${resolvedConfigPath}`];
+  const uploadArgs = [...invocation.prefixArgs, 'upload', `--config=${resolvedConfigPath}`];
 
-  logger.info(`Running: ${command} ${collectArgs.join(' ')}`);
-  await spawnCommand(command, collectArgs, workingDirectory, logger);
+  logger.info(`Running: ${invocation.command} ${collectArgs.join(' ')}`);
+  await spawnCommand(invocation.command, collectArgs, workingDirectory, logger, invocation.shell);
 
-  logger.info(`Running: ${command} ${uploadArgs.join(' ')}`);
-  await spawnCommand(command, uploadArgs, workingDirectory, logger);
+  logger.info(`Running: ${invocation.command} ${uploadArgs.join(' ')}`);
+  await spawnCommand(invocation.command, uploadArgs, workingDirectory, logger, invocation.shell);
 
   const absoluteResultsPath = path.resolve(workingDirectory, resultsPath);
   if (await pathExists(path.join(absoluteResultsPath, 'manifest.json'))) {
@@ -68,42 +76,68 @@ export async function runLighthouse(options: RunLighthouseOptions): Promise<stri
   );
 }
 
-function resolveLhciInvocation(logger: Logger): { command: string; prefixArgs: string[] } {
+/**
+ * Resolve @lhci/cli for both local development and published GitHub Action usage.
+ * When used as an action, dependencies are installed into the action directory
+ * (see action.yml composite steps), so __dirname/../node_modules is preferred.
+ */
+export function resolveLhciInvocation(logger: Logger = consoleLogger): LhciInvocation {
   const candidates = [
-    path.join(process.cwd(), 'node_modules', '@lhci', 'cli', 'src', 'cli.js'),
-    path.join(__dirname, '..', '..', 'node_modules', '@lhci', 'cli', 'src', 'cli.js'),
+    // Published action: dist/index.js → ../node_modules/@lhci/cli
     path.join(__dirname, '..', 'node_modules', '@lhci', 'cli', 'src', 'cli.js'),
+    // Local tsx/dev from src/lighthouse
+    path.join(__dirname, '..', '..', 'node_modules', '@lhci', 'cli', 'src', 'cli.js'),
+    // Consumer workspace install
+    path.join(process.cwd(), 'node_modules', '@lhci', 'cli', 'src', 'cli.js'),
   ];
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
-      return { command: process.execPath, prefixArgs: [candidate] };
+      logger.info(`Using local @lhci/cli at ${candidate}`);
+      return { command: process.execPath, prefixArgs: [candidate], shell: false };
     }
   }
 
-  logger.info('@lhci/cli not found locally');
-  throw new Error('@lhci/cli is not installed. Run: npm install --ignore-scripts');
+  logger.info(`Local @lhci/cli not found; falling back to npx ${LHCI_PACKAGE}`);
+  if (process.platform === 'win32') {
+    // npx.cmd has no spaces — shell:true is safe here (unlike node.exe under Program Files)
+    return {
+      command: 'npx.cmd',
+      prefixArgs: ['--yes', LHCI_PACKAGE],
+      shell: true,
+    };
+  }
+
+  return {
+    command: 'npx',
+    prefixArgs: ['--yes', LHCI_PACKAGE],
+    shell: false,
+  };
 }
 
-function spawnCommand(command: string, args: string[], cwd: string, logger: Logger): Promise<void> {
+function spawnCommand(
+  command: string,
+  args: string[],
+  cwd: string,
+  logger: Logger,
+  shell: boolean,
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Do not use shell:true with paths that contain spaces (e.g. "C:\Program Files\nodejs\node.exe").
-    // That breaks on Windows as cmd.exe splits the unquoted path.
     const child = spawn(command, args, {
       cwd,
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: false,
+      shell,
       windowsHide: true,
     });
 
-    child.stdout.on('data', (chunk: Buffer) => {
+    child.stdout?.on('data', (chunk: Buffer) => {
       for (const line of chunk.toString().split(/\r?\n/).filter(Boolean)) {
         logger.info(line);
       }
     });
 
-    child.stderr.on('data', (chunk: Buffer) => {
+    child.stderr?.on('data', (chunk: Buffer) => {
       for (const line of chunk.toString().split(/\r?\n/).filter(Boolean)) {
         logger.warning(line);
       }

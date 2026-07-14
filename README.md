@@ -31,9 +31,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Lighthouse CI
         id: lighthouse
         uses: amankumarrr/lighthouse-insights-action@v1
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         with:
           urls: |
             https://example.com
@@ -192,9 +198,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Lighthouse CI
         id: lighthouse
         uses: amankumarrr/lighthouse-insights-action@v1
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         with:
           urls: |
             https://example.com
@@ -207,6 +219,8 @@ jobs:
       - name: Show report path
         run: echo "Report at ${{ steps.lighthouse.outputs.report-path }}"
 ```
+
+Chrome (or Chromium) must be available on the runner. The action installs `@lhci/cli` automatically when it runs.
 
 After the job finishes, open the workflow run **Summary** tab to view the Markdown report.
 

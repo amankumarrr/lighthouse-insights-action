@@ -102,6 +102,16 @@ docs/
 
 Report generation behavior is intentionally aligned with `scripts/generate-lighthouse-report.py`. Do **not** invoke the Python script from the GitHub Action — TypeScript is the production implementation.
 
+## How the published action runs
+
+`action.yml` is a **composite** action. When another repo uses it, GitHub:
+
+1. Checks out this action
+2. Runs `npm ci --omit=dev` in the action directory (installs `@lhci/cli`)
+3. Executes `dist/index.js` with the consumer workspace as the working directory
+
+Consumers should install Chrome on the runner (for example `browser-actions/setup-chrome`) and set `CHROME_PATH`.
+
 ## Architecture notes
 
 - Keep business logic independent from `@actions/*` so it stays unit-testable.

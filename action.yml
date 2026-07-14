@@ -49,15 +49,46 @@ inputs:
 outputs:
   report:
     description: Generated Markdown report content
+    value: ${{ steps.run.outputs.report }}
   report-path:
     description: Path to the written Markdown report file
+    value: ${{ steps.run.outputs.report-path }}
   results-path:
     description: Path to the Lighthouse CI results directory
+    value: ${{ steps.run.outputs.results-path }}
   report-artifact-name:
     description: Name of the uploaded Markdown report artifact (empty if not uploaded)
+    value: ${{ steps.run.outputs.report-artifact-name }}
   raw-results-artifact-name:
     description: Name of the uploaded raw results artifact (empty if not uploaded)
+    value: ${{ steps.run.outputs.raw-results-artifact-name }}
 
 runs:
-  using: node20
-  main: dist/index.js
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+
+    - name: Install action dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --omit=dev --ignore-scripts
+
+    - name: Run Lighthouse Insights Action
+      id: run
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        INPUT_URLS: ${{ inputs.urls }}
+        "INPUT_CONFIG-PATH": ${{ inputs.config-path }}
+        "INPUT_RESULTS-PATH": ${{ inputs.results-path }}
+        "INPUT_PRODUCTION-REPORT": ${{ inputs.production-report }}
+        "INPUT_UPLOAD-SUMMARY": ${{ inputs.upload-summary }}
+        "INPUT_UPLOAD-REPORT": ${{ inputs.upload-report }}
+        "INPUT_UPLOAD-RAW-RESULTS": ${{ inputs.upload-raw-results }}
+        "INPUT_REPORT-ARTIFACT-NAME": ${{ inputs.report-artifact-name }}
+        "INPUT_RAW-RESULTS-ARTIFACT-NAME": ${{ inputs.raw-results-artifact-name }}
+        "INPUT_IMPORTANT-PATHS": ${{ inputs.important-paths }}
+      run: node "${{ github.action_path }}/dist/index.js"
