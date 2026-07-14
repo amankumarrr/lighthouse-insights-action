@@ -108,3 +108,20 @@ runs:
         "INPUT_RAW-RESULTS-ARTIFACT-NAME": ${{ inputs.raw-results-artifact-name }}
         "INPUT_IMPORTANT-PATHS": ${{ inputs.important-paths }}
       run: node "${{ github.action_path }}/dist/index.js"
+
+    # Composite run: steps do not receive ACTIONS_RUNTIME_TOKEN, so upload via the official action.
+    - name: Upload Markdown report artifact
+      if: ${{ inputs.upload-report == 'true' && steps.run.outputs.report-path != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.report-artifact-name }}
+        path: ${{ steps.run.outputs.report-path }}
+        if-no-files-found: warn
+
+    - name: Upload raw Lighthouse results artifact
+      if: ${{ inputs.upload-raw-results == 'true' && steps.run.outputs.results-path != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.raw-results-artifact-name }}
+        path: ${{ steps.run.outputs.results-path }}
+        if-no-files-found: warn

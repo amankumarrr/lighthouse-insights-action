@@ -98,18 +98,29 @@ async function run(): Promise<void> {
 
   let reportArtifactName = '';
   if (inputs.uploadReport) {
-    reportArtifactName = await uploadReportArtifact(reportPath, inputs.reportArtifactName);
-    core.info(`Uploaded report artifact: ${reportArtifactName}`);
+    reportArtifactName = inputs.reportArtifactName;
+    if (process.env.ACTIONS_RUNTIME_TOKEN) {
+      await uploadReportArtifact(reportPath, inputs.reportArtifactName);
+      core.info(`Uploaded report artifact: ${reportArtifactName}`);
+    } else {
+      core.info(
+        'Report artifact upload will be handled by the composite action step (ACTIONS_RUNTIME_TOKEN not available in this process)',
+      );
+    }
   }
 
   let rawResultsArtifactName = '';
   if (inputs.uploadRawResults) {
-    rawResultsArtifactName = await uploadRawResultsArtifact(
-      resultsPath,
-      inputs.rawResultsArtifactName,
-    );
-    if (rawResultsArtifactName) {
-      core.info(`Uploaded raw results artifact: ${rawResultsArtifactName}`);
+    rawResultsArtifactName = inputs.rawResultsArtifactName;
+    if (process.env.ACTIONS_RUNTIME_TOKEN) {
+      const uploaded = await uploadRawResultsArtifact(resultsPath, inputs.rawResultsArtifactName);
+      if (uploaded) {
+        core.info(`Uploaded raw results artifact: ${rawResultsArtifactName}`);
+      }
+    } else {
+      core.info(
+        'Raw results artifact upload will be handled by the composite action step (ACTIONS_RUNTIME_TOKEN not available in this process)',
+      );
     }
   }
 
