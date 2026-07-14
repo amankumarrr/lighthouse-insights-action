@@ -41,6 +41,10 @@ export interface PageReportRow {
 
 export interface ActionInputs {
   urls: string[];
+  paths: string[];
+  productionDomain: string;
+  stagingDomain: string;
+  defaultDomain: string;
   configPath: string;
   resultsPath: string;
   productionReport: string;

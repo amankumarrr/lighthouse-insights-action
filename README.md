@@ -7,7 +7,8 @@ Use this when you want a **single workflow step** instead of stitching together 
 ## Features
 
 - Run Lighthouse CI from one action step
-- Simple mode (`urls`) or advanced mode (`config-path`)
+- Simple mode (`urls`), domain+paths mode, or advanced mode (`config-path`)
+- Audit production + staging together when both domains are configured
 - Markdown report: Performance, Accessibility, Best Practices, SEO, Bundle Size, Unused Bundle
 - PR vs production score/bundle comparison
 - Important pages highlighted with ⭐
@@ -60,10 +61,14 @@ The action will:
 
 | Input | Description | Default |
 | --- | --- | --- |
-| `urls` | Newline-separated URLs to audit (simple mode) | |
-| `config-path` | Path to a Lighthouse CI config (takes precedence over `urls`) | |
+| `urls` | Full URLs to audit (highest priority when set) | |
+| `paths` | Paths to audit (newline or comma-separated), used with domain inputs | |
+| `production-domain` | Production origin, e.g. `https://www.example.com` | |
+| `staging-domain` | Staging/preview origin, e.g. `https://staging.example.com` | |
+| `default-domain` | Default origin used with `paths` when both staging and production are not set | |
+| `config-path` | Optional LHCI config (e.g. `.lighthouserc.json`). Not auto-detected; takes precedence over urls/paths | |
 | `results-path` | Directory for Lighthouse CI results | `.lighthouseci` |
-| `production-report` | Production baseline Markdown used for PR comparisons | `prod-lighthouse-report.md` |
+| `production-report` | Markdown baseline from a production run; used on PRs for path-based comparison | `prod-lighthouse-report.md` |
 | `upload-summary` | Publish the report to the GitHub Step Summary | `true` |
 | `upload-report` | Upload the Markdown report as an artifact | `true` |
 | `upload-raw-results` | Upload the raw `.lighthouseci` results | `false` |
@@ -95,6 +100,75 @@ Example:
   run: echo "${{ steps.lighthouse.outputs.report-path }}"
 ```
 
+## Configuration modes
+
+The action does **not** auto-detect `.lighthouserc` / `.lighthouserc.json`.
+
+| Priority | Mode | How to enable | What it does |
+| --- | --- | --- | --- |
+| 1 | Advanced | `config-path: ./.lighthouserc.json` | Uses your LHCI config (URLs come from that file) |
+| 2 | Explicit URLs | `urls` | Audits exactly those full URLs |
+| 3 | Domains + paths | `paths` + domain inputs | Builds URLs from domains and paths (see below) |
+
+### Domains + paths
+
+```yaml
+paths: |
+  /
+  /about
+  /pricing
+production-domain: https://www.example.com
+staging-domain: https://staging.example.com
+default-domain: https://example.com
+```
+
+Behavior:
+
+| Configured | URLs audited |
+| --- | --- |
+| `paths` + **both** `production-domain` and `staging-domain` | Every path on **both** domains |
+| `paths` + only `default-domain` (or only one of prod/staging) | Every path on that **single** domain |
+
+Examples:
+
+**Both domains** (production + staging):
+
+```yaml
+- uses: amankumarrr/lighthouse-insights-action@v1
+  with:
+    paths: |
+      /
+      /about
+    production-domain: https://www.example.com
+    staging-domain: https://staging.example.com
+```
+
+Audits:
+
+- `https://www.example.com/`
+- `https://www.example.com/about`
+- `https://staging.example.com/`
+- `https://staging.example.com/about`
+
+**Default domain only:**
+
+```yaml
+- uses: amankumarrr/lighthouse-insights-action@v1
+  with:
+    paths: |
+      /
+      /about
+    default-domain: https://example.com
+```
+
+Audits:
+
+- `https://example.com/`
+- `https://example.com/about`
+
+`.lighthouserc` is only for **how LHCI runs** when you pass `config-path`.  
+It is **not** used for PR vs production comparison.
+
 ## Simple usage (URLs only)
 
 ```yaml
@@ -106,11 +180,7 @@ Example:
       https://example.com/about
 ```
 
-The action generates a default Lighthouse CI configuration for you.
-
-## Advanced usage (custom config)
-
-When `config-path` is set, it takes precedence over `urls`.
+## Advanced usage (custom `.lighthouserc`)
 
 ```yaml
 - name: Lighthouse CI
@@ -137,31 +207,92 @@ Example `.lighthouserc.json`:
 }
 ```
 
-## Pull request comparison
+## Pull request vs production comparison
 
-On `pull_request` events the action:
+### How it works
 
-1. Reads the production baseline (`production-report`)
-2. Compares scores and bundle sizes against the current run
-3. Shows improvements (⬆️) and regressions (⬇️) in the Markdown table
+Comparison is **not** “two URLs in one run”. It works like this:
 
-Make the baseline available in the PR job (for example by downloading an artifact from `main`):
+1. **On `main` / non-PR** — audit your **production** URLs and save a Markdown baseline (`prod-lighthouse-report.md` by default).
+2. **On `pull_request`** — audit your **PR / preview** URLs, then compare those results to the saved baseline.
+
+Rows are matched by **URL path**, not hostname:
+
+| Production URL | PR URL | Matched as |
+| --- | --- | --- |
+| `https://www.example.com/` | `https://pr-123.example.com/` | `/` |
+| `https://www.example.com/about` | `https://pr-123.example.com/about` | `/about` |
+
+So production and PR hosts can differ; paths must line up.
+
+The PR report shows deltas:
+
+- Scores: `90 (⬆️5)` improved vs prod, `85 (⬇️5)` regressed
+- Bundle size: smaller is ⬇️, larger is ⬆️
+
+If the baseline file is missing on a PR, comparison rows are skipped (warning only).
+
+### What you must provide on PRs
+
+Before the action runs on a PR, put the production Markdown baseline on disk as `production-report` (default `prod-lighthouse-report.md`). Typical options:
+
+- Download the artifact uploaded from the `main` workflow
+- Commit a known baseline file
+- Restore it from cache / storage
+
+### Full example (production baseline + PR preview)
+
+**On `main`** — audit production and save the baseline artifact:
 
 ```yaml
-- uses: actions/download-artifact@v4
+- name: Lighthouse CI (production)
+  if: github.event_name != 'pull_request'
+  uses: amankumarrr/lighthouse-insights-action@v1
+  env:
+    CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
   with:
+    urls: |
+      https://www.example.com
+      https://www.example.com/about
+    production-report: prod-lighthouse-report.md
+    upload-report: true
+    report-artifact-name: lighthouse-report
+```
+
+**On pull requests** — restore that baseline, audit the PR/preview URLs, compare by path:
+
+```yaml
+- name: Download production baseline
+  if: github.event_name == 'pull_request'
+  uses: dawidd6/action-download-artifact@v6
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    workflow: lighthouse.yml   # name of this workflow file
+    branch: main
     name: lighthouse-report
     path: .
+    search_artifacts: true
+    if_no_artifact_found: warn
 
-- name: Lighthouse CI
+- name: Lighthouse CI (PR vs production)
+  if: github.event_name == 'pull_request'
   uses: amankumarrr/lighthouse-insights-action@v1
+  env:
+    CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
   with:
     urls: |
       https://pr-slot.example.com
+      https://pr-slot.example.com/about
     production-report: prod-lighthouse-report.md
+    upload-summary: true
+    upload-report: true
 ```
 
-On non-PR events the action writes `prod-lighthouse-report.md` (or your `production-report` path) for use as the next baseline.
+Flow:
+
+1. **main** writes `prod-lighthouse-report.md` and uploads artifact `lighthouse-report`
+2. **PR** downloads that file, audits preview URLs, writes `lighthouse-report.md` with ⬆️/⬇️ deltas
+3. Paths must match (`/` ↔ `/`, `/about` ↔ `/about`); hosts can differ
 
 ## Artifact uploads
 
