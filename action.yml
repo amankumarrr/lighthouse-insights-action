@@ -1,0 +1,63 @@
+name: Lighthouse Insights Action
+description: Run Lighthouse CI audits and generate human-friendly Markdown reports
+author: lighthouse-insights-action
+
+branding:
+  icon: activity
+  color: green
+
+inputs:
+  urls:
+    description: Newline-separated list of URLs to audit (simple mode)
+    required: false
+  config-path:
+    description: Path to a Lighthouse CI configuration file (advanced mode; takes precedence over urls)
+    required: false
+  results-path:
+    description: Directory containing Lighthouse CI results
+    required: false
+    default: .lighthouseci
+  production-report:
+    description: Path to the production baseline Markdown report used for PR comparisons
+    required: false
+    default: prod-lighthouse-report.md
+  upload-summary:
+    description: Whether to publish the report to the GitHub Step Summary
+    required: false
+    default: 'true'
+  upload-report:
+    description: Whether to upload the Markdown report as a workflow artifact
+    required: false
+    default: 'true'
+  upload-raw-results:
+    description: Whether to upload the raw Lighthouse CI results directory as an artifact
+    required: false
+    default: 'false'
+  report-artifact-name:
+    description: Artifact name for the Markdown report
+    required: false
+    default: lighthouse-report
+  raw-results-artifact-name:
+    description: Artifact name for the raw Lighthouse CI results
+    required: false
+    default: lighthouse-results
+  important-paths:
+    description: Comma-separated URL paths to highlight with a star prefix
+    required: false
+    default: /,/consulting/net-upgrade,/consulting/web-applications
+
+outputs:
+  report:
+    description: Generated Markdown report content
+  report-path:
+    description: Path to the written Markdown report file
+  results-path:
+    description: Path to the Lighthouse CI results directory
+  report-artifact-name:
+    description: Name of the uploaded Markdown report artifact (empty if not uploaded)
+  raw-results-artifact-name:
+    description: Name of the uploaded raw results artifact (empty if not uploaded)
+
+runs:
+  using: node20
+  main: dist/index.js

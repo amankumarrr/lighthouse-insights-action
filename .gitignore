@@ -1,0 +1,11 @@
+node_modules/
+*.tsbuildinfo
+.DS_Store
+.lighthouseci/
+lighthouserc.generated.json
+coverage/
+*.log
+lighthouse-report.md
+
+scripts/
+agents.md
