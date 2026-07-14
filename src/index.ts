@@ -5,7 +5,7 @@ import { uploadRawResultsArtifact, uploadReportArtifact } from './github/artifac
 import { setActionOutputs } from './github/outputs';
 import { publishStepSummary } from './github/summary';
 import { runLighthouse } from './lighthouse/runner';
-import { parseImportantPaths, parseUrls } from './lighthouse/urls';
+import { parseImportantPaths, parsePaths, parseUrls, resolveAuditUrls } from './lighthouse/urls';
 import type { ActionInputs, PageScores } from './models/lighthouse';
 import { readManifest } from './parser/manifest';
 import { parseProdReport } from './report/comparison';
@@ -22,6 +22,10 @@ const actionsLogger: Logger = {
 function getInputs(): ActionInputs {
   return {
     urls: parseUrls(core.getInput('urls')),
+    paths: parsePaths(core.getInput('paths')),
+    productionDomain: core.getInput('production-domain'),
+    stagingDomain: core.getInput('staging-domain'),
+    defaultDomain: core.getInput('default-domain'),
     configPath: core.getInput('config-path'),
     resultsPath: core.getInput('results-path') || '.lighthouseci',
     productionReport: core.getInput('production-report') || 'prod-lighthouse-report.md',
@@ -40,11 +44,24 @@ async function run(): Promise<void> {
   const inputs = getInputs();
   const isPullRequest = github.context.eventName === 'pull_request';
 
+  const resolvedUrls = resolveAuditUrls({
+    urls: inputs.urls,
+    paths: inputs.paths,
+    productionDomain: inputs.productionDomain,
+    stagingDomain: inputs.stagingDomain,
+    defaultDomain: inputs.defaultDomain,
+  });
+
   core.info(`Event: ${github.context.eventName}`);
   core.info(`Results path: ${inputs.resultsPath}`);
+  if (resolvedUrls.length > 0) {
+    core.info(
+      `Auditing ${resolvedUrls.length} URL(s):\n${resolvedUrls.map((url) => `  - ${url}`).join('\n')}`,
+    );
+  }
 
   const resultsPath = await runLighthouse({
-    urls: inputs.urls,
+    urls: resolvedUrls,
     configPath: inputs.configPath,
     resultsPath: inputs.resultsPath,
     logger: actionsLogger,

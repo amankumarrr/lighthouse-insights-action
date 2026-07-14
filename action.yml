@@ -8,10 +8,22 @@ branding:
 
 inputs:
   urls:
-    description: Newline-separated list of URLs to audit (simple mode)
+    description: Newline-separated list of full URLs to audit (highest priority when set)
+    required: false
+  paths:
+    description: Newline or comma-separated URL paths (e.g. /,/about). Used with domain inputs when urls is empty
+    required: false
+  production-domain:
+    description: Production origin (e.g. https://www.example.com). With staging-domain + paths, both domains are audited
+    required: false
+  staging-domain:
+    description: Staging/preview origin (e.g. https://staging.example.com). With production-domain + paths, both domains are audited
+    required: false
+  default-domain:
+    description: Default origin used with paths when production-domain and staging-domain are not both set
     required: false
   config-path:
-    description: Path to a Lighthouse CI configuration file (advanced mode; takes precedence over urls)
+    description: Path to a Lighthouse CI configuration file (advanced mode; takes precedence over urls/paths)
     required: false
   results-path:
     description: Directory containing Lighthouse CI results
@@ -82,6 +94,10 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         INPUT_URLS: ${{ inputs.urls }}
+        INPUT_PATHS: ${{ inputs.paths }}
+        "INPUT_PRODUCTION-DOMAIN": ${{ inputs.production-domain }}
+        "INPUT_STAGING-DOMAIN": ${{ inputs.staging-domain }}
+        "INPUT_DEFAULT-DOMAIN": ${{ inputs.default-domain }}
         "INPUT_CONFIG-PATH": ${{ inputs.config-path }}
         "INPUT_RESULTS-PATH": ${{ inputs.results-path }}
         "INPUT_PRODUCTION-REPORT": ${{ inputs.production-report }}

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultConfig } from '../src/lighthouse/config';
-import { parseImportantPaths, parseUrls } from '../src/lighthouse/urls';
-import { formatUrlForFilename } from '../src/parser/treemap';
-import { calculateBundleSizes } from '../src/parser/treemap';
+import {
+  joinDomainAndPath,
+  parseImportantPaths,
+  parsePaths,
+  parseUrls,
+  resolveAuditUrls,
+  resolveUrlsFromDomains,
+} from '../src/lighthouse/urls';
+import { calculateBundleSizes, formatUrlForFilename } from '../src/parser/treemap';
 import {
   extractPath,
   formatBundleSize,
@@ -104,6 +110,71 @@ https://example.com/about
     expect(paths.has('/')).toBe(true);
     expect(paths.has('/consulting/net-upgrade')).toBe(true);
     expect(paths.has('/consulting/web-applications')).toBe(true);
+  });
+
+  it('parses newline and comma-separated paths', () => {
+    expect(parsePaths('/,/about\n/contact')).toEqual(['/', '/about', '/contact']);
+  });
+
+  it('joins domain and path', () => {
+    expect(joinDomainAndPath('https://example.com/', '/')).toBe('https://example.com/');
+    expect(joinDomainAndPath('https://example.com', 'about')).toBe('https://example.com/about');
+  });
+});
+
+describe('resolveUrlsFromDomains', () => {
+  const paths = ['/', '/about'];
+
+  it('audits both domains when production and staging are set', () => {
+    expect(
+      resolveUrlsFromDomains({
+        paths,
+        productionDomain: 'https://www.example.com',
+        stagingDomain: 'https://staging.example.com',
+        defaultDomain: 'https://ignored.example.com',
+      }),
+    ).toEqual([
+      'https://www.example.com/',
+      'https://www.example.com/about',
+      'https://staging.example.com/',
+      'https://staging.example.com/about',
+    ]);
+  });
+
+  it('audits only the default domain when both staging and production are not set', () => {
+    expect(
+      resolveUrlsFromDomains({
+        paths,
+        productionDomain: '',
+        stagingDomain: '',
+        defaultDomain: 'https://example.com',
+      }),
+    ).toEqual(['https://example.com/', 'https://example.com/about']);
+  });
+
+  it('falls back to a single provided domain when default is missing', () => {
+    expect(
+      resolveUrlsFromDomains({
+        paths,
+        productionDomain: 'https://www.example.com',
+        stagingDomain: '',
+        defaultDomain: '',
+      }),
+    ).toEqual(['https://www.example.com/', 'https://www.example.com/about']);
+  });
+});
+
+describe('resolveAuditUrls', () => {
+  it('prefers explicit urls over paths/domains', () => {
+    expect(
+      resolveAuditUrls({
+        urls: ['https://custom.example.com/x'],
+        paths: ['/'],
+        productionDomain: 'https://www.example.com',
+        stagingDomain: 'https://staging.example.com',
+        defaultDomain: 'https://example.com',
+      }),
+    ).toEqual(['https://custom.example.com/x']);
   });
 });
 
