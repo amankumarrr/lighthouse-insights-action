@@ -19,12 +19,7 @@
   "engines": {
     "node": ">=20"
   },
-  "keywords": [
-    "github-actions",
-    "lighthouse",
-    "lighthouse-ci",
-    "performance"
-  ],
+  "keywords": ["github-actions", "lighthouse", "lighthouse-ci", "performance"],
   "license": "MIT",
   "dependencies": {
     "@actions/artifact": "^4.0.0",
