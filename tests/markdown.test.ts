@@ -60,7 +60,6 @@ describe('generateLighthouseMarkdown', () => {
     const markdown = await generateLighthouseMarkdown(sampleManifest, {
       resultsPath: dir,
       isPullRequest: false,
-      importantPaths: new Set(['/']),
       logger: silentLogger,
     });
 
@@ -68,9 +67,7 @@ describe('generateLighthouseMarkdown', () => {
     expect(markdown).toContain(
       '| 🌐 URL | ⚡ Performance | ♿ Accessibility | ✅ Best Practices | 🔍 SEO | 📦 Bundle Size | 🗑️ Unused Bundle |',
     );
-    expect(markdown).toContain(
-      '| ⭐ https://example.com/ | 90 | 95 | 88 | 100 | 2.00 MB | 1.00 MB |',
-    );
+    expect(markdown).toContain('| https://example.com/ | 90 | 95 | 88 | 100 | 2.00 MB | 1.00 MB |');
     expect(markdown).toContain(
       '| https://example.com/about | 80 | 90 | 85 | 92 | 2.00 MB | 1.00 MB |',
     );
@@ -84,10 +81,9 @@ describe('generateLighthouseMarkdown', () => {
     const markdown = await generateLighthouseMarkdown(sampleManifest, {
       resultsPath: dir,
       isPullRequest: true,
-      importantPaths: new Set(['/']),
       prodScores: {
         '/': {
-          urlDisplay: '⭐ https://example.com/',
+          urlDisplay: 'https://example.com/',
           performance: 85,
           accessibility: 95,
           bestPractices: 90,
@@ -127,7 +123,7 @@ describe('parseProdReport', () => {
       '',
       '| 🌐 URL | ⚡ Performance | ♿ Accessibility | ✅ Best Practices | 🔍 SEO | 📦 Bundle Size | 🗑️ Unused Bundle |',
       '| --- | ----------- | ------------- | -------------- | --- | ---------------- | ---------------- |',
-      '| ⭐ https://example.com/ | 90 | 95 | 88 | 100 | 2.00 MB | 1.00 MB |',
+      '| https://example.com/ | 90 | 95 | 88 | 100 | 2.00 MB | 1.00 MB |',
       '| https://example.com/about | 80 | 90 | 85 | 92 | 1.50 MB | 0.50 MB |',
       '',
     ].join('\n');

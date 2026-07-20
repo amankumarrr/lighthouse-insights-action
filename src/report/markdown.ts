@@ -15,7 +15,6 @@ import {
 export interface GenerateMarkdownOptions {
   resultsPath: string;
   isPullRequest: boolean;
-  importantPaths: Set<string>;
   prodScores?: Record<string, PageScores>;
   /** When set, only include URLs belonging to this domain (e.g. staging on PRs). */
   includeDomain?: string;
@@ -24,7 +23,6 @@ export interface GenerateMarkdownOptions {
 
 /**
  * Builds the Markdown report from Lighthouse CI manifest results.
- * Generates the Markdown Lighthouse comparison / baseline report.
  */
 export async function generateLighthouseMarkdown(
   manifest: ManifestResult[],
@@ -33,7 +31,6 @@ export async function generateLighthouseMarkdown(
   const {
     resultsPath,
     isPullRequest,
-    importantPaths,
     prodScores = {},
     includeDomain,
     logger = consoleLogger,
@@ -54,7 +51,7 @@ export async function generateLighthouseMarkdown(
       continue;
     }
 
-    const row = await buildPageRow(result, resultsPath, importantPaths, logger);
+    const row = await buildPageRow(result, resultsPath, logger);
 
     if (!isPullRequest) {
       lines.push(formatProductionRow(row));
@@ -76,16 +73,14 @@ export async function generateLighthouseMarkdown(
 async function buildPageRow(
   result: ManifestResult,
   resultsPath: string,
-  importantPaths: Set<string>,
   logger: Logger,
 ): Promise<PageReportRow> {
   const url = result.url;
-  const urlDisplay = importantPaths.has(extractPath(url)) ? `⭐ ${url}` : url;
   const bundle = await getTotalAndUnusedBytesForUrl(url, resultsPath, logger);
 
   return {
     url,
-    urlDisplay,
+    urlDisplay: url,
     performance: toPercentageScore(result.summary.performance),
     accessibility: toPercentageScore(result.summary.accessibility),
     bestPractices: toPercentageScore(result.summary['best-practices']),

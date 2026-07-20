@@ -57,10 +57,6 @@ inputs:
     description: Artifact name for the raw Lighthouse CI results
     required: false
     default: lighthouse-results
-  important-paths:
-    description: Comma-separated URL paths to highlight with a star prefix
-    required: false
-    default: /,/consulting/net-upgrade,/consulting/web-applications
 
 outputs:
   report:
@@ -111,7 +107,6 @@ runs:
         "INPUT_COMMENT-ON-PR": ${{ inputs.comment-on-pr }}
         "INPUT_REPORT-ARTIFACT-NAME": ${{ inputs.report-artifact-name }}
         "INPUT_RAW-RESULTS-ARTIFACT-NAME": ${{ inputs.raw-results-artifact-name }}
-        "INPUT_IMPORTANT-PATHS": ${{ inputs.important-paths }}
         GITHUB_TOKEN: ${{ github.token }}
       run: node "${{ github.action_path }}/dist/index.js"
 

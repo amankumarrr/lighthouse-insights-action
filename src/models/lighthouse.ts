@@ -54,7 +54,6 @@ export interface ActionInputs {
   commentOnPr: boolean;
   reportArtifactName: string;
   rawResultsArtifactName: string;
-  importantPaths: Set<string>;
 }
 
 export interface TreemapNode {

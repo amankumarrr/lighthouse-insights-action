@@ -11,7 +11,6 @@ Use this when you want a **single workflow step** instead of stitching together 
 - With production + staging domains: main audits production, PRs audit staging and show score deltas
 - Markdown report: Performance, Accessibility, Best Practices, SEO, Bundle Size, Unused Bundle
 - PR vs production score/bundle comparison
-- Important pages highlighted with ⭐
 - GitHub Step Summary
 - Optional Markdown + raw `.lighthouseci` artifact uploads
 - Outputs for downstream steps
@@ -75,7 +74,6 @@ The action will:
 | `comment-on-pr` | On `pull_request`, create/update a sticky PR comment with the report | `false` |
 | `report-artifact-name` | Artifact name for the Markdown report | `lighthouse-report` |
 | `raw-results-artifact-name` | Artifact name for raw results | `lighthouse-results` |
-| `important-paths` | Comma-separated paths to highlight with ⭐ | `/,/consulting/net-upgrade,/consulting/web-applications` |
 
 ## Outputs
 

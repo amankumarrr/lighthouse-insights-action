@@ -6,7 +6,7 @@ import { commentReportOnPullRequest } from './github/comment';
 import { setActionOutputs } from './github/outputs';
 import { publishStepSummary } from './github/summary';
 import { runLighthouse } from './lighthouse/runner';
-import { parseImportantPaths, parsePaths, parseUrls, resolveAuditUrls } from './lighthouse/urls';
+import { parsePaths, parseUrls, resolveAuditUrls } from './lighthouse/urls';
 import type { ActionInputs, PageScores } from './models/lighthouse';
 import { readManifest } from './parser/manifest';
 import { parseProdReport } from './report/comparison';
@@ -37,9 +37,6 @@ function getInputs(): ActionInputs {
     commentOnPr: core.getBooleanInput('comment-on-pr'),
     reportArtifactName: core.getInput('report-artifact-name') || 'lighthouse-report',
     rawResultsArtifactName: core.getInput('raw-results-artifact-name') || 'lighthouse-results',
-    importantPaths: parseImportantPaths(
-      core.getInput('important-paths') || '/,/consulting/net-upgrade,/consulting/web-applications',
-    ),
   };
 }
 
@@ -101,7 +98,6 @@ async function run(): Promise<void> {
   const report = await generateLighthouseMarkdown(manifest, {
     resultsPath,
     isPullRequest,
-    importantPaths: inputs.importantPaths,
     prodScores,
     includeDomain,
     logger: actionsLogger,

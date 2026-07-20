@@ -20,13 +20,6 @@ export function parsePaths(pathsInput: string): string[] {
     .map(normalizePath);
 }
 
-/**
- * Parses comma-separated important path lists.
- */
-export function parseImportantPaths(importantPathsInput: string): Set<string> {
-  return new Set(parsePaths(importantPathsInput));
-}
-
 export function normalizePath(pathValue: string): string {
   const trimmed = pathValue.trim();
   if (!trimmed || trimmed === '/') {

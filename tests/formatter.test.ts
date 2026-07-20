@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultConfig } from '../src/lighthouse/config';
 import {
   joinDomainAndPath,
-  parseImportantPaths,
   parsePaths,
   parseUrls,
   resolveAuditUrls,
@@ -103,13 +102,6 @@ https://example.com
 https://example.com/about
 `),
     ).toEqual(['https://example.com', 'https://example.com/about']);
-  });
-
-  it('parses important paths', () => {
-    const paths = parseImportantPaths('/,/consulting/net-upgrade,/consulting/web-applications');
-    expect(paths.has('/')).toBe(true);
-    expect(paths.has('/consulting/net-upgrade')).toBe(true);
-    expect(paths.has('/consulting/web-applications')).toBe(true);
   });
 
   it('parses newline and comma-separated paths', () => {

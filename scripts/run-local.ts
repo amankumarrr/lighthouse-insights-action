@@ -11,12 +11,7 @@
 import { appendFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { runLighthouse } from '../src/lighthouse/runner';
-import {
-  parseImportantPaths,
-  parsePaths,
-  parseUrls,
-  resolveAuditUrls,
-} from '../src/lighthouse/urls';
+import { parsePaths, parseUrls, resolveAuditUrls } from '../src/lighthouse/urls';
 import type { PageScores } from '../src/models/lighthouse';
 import { readManifest } from '../src/parser/manifest';
 import { parseProdReport } from '../src/report/comparison';
@@ -65,14 +60,11 @@ interface CliOptions {
   resultsPath: string;
   productionReport: string;
   outputPath: string;
-  importantPaths: Set<string>;
   skipCollect: boolean;
   useFixture: boolean;
   isPullRequest: boolean;
   dryRun: boolean;
 }
-
-const DEFAULT_IMPORTANT = '/,/consulting/net-upgrade,/consulting/web-applications';
 
 function printHelp(): void {
   process.stdout.write(`
@@ -94,7 +86,6 @@ Options:
   --results-path <dir>          Results directory (default: .lighthouseci)
   --production-report <file>    Baseline report for PR comparison
   --out <file>                  Output Markdown path
-  --important-paths <list>      Comma-separated paths to star-highlight
   --dry-run                     Print resolved URLs only (no Lighthouse)
   --skip-collect                Skip LHCI; generate report from existing results
   --fixture                     Use bundled fixtures (offline smoke test)
@@ -118,7 +109,6 @@ function parseArgs(argv: string[]): CliOptions {
     resultsPath: '.lighthouseci',
     productionReport: 'prod-lighthouse-report.md',
     outputPath: '',
-    importantPaths: parseImportantPaths(DEFAULT_IMPORTANT),
     skipCollect: false,
     useFixture: false,
     isPullRequest: false,
@@ -171,10 +161,6 @@ function parseArgs(argv: string[]): CliOptions {
         break;
       case '--out':
         options.outputPath = next ?? '';
-        i++;
-        break;
-      case '--important-paths':
-        options.importantPaths = parseImportantPaths(next ?? DEFAULT_IMPORTANT);
         i++;
         break;
       case '--dry-run':
@@ -330,7 +316,6 @@ async function main(): Promise<void> {
   const report = await generateLighthouseMarkdown(manifest, {
     resultsPath: options.resultsPath,
     isPullRequest: options.isPullRequest,
-    importantPaths: options.importantPaths,
     prodScores,
     logger,
   });
