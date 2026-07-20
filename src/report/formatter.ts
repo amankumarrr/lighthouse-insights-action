@@ -1,5 +1,5 @@
 /**
- * Formatting helpers matching scripts/generate-lighthouse-report.py
+ * Formatting helpers for scores and bundle sizes in Markdown reports.
  */
 
 export function extractPath(url: string): string {

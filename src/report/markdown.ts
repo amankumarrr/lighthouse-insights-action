@@ -24,7 +24,7 @@ export interface GenerateMarkdownOptions {
 
 /**
  * Builds the Markdown report from Lighthouse CI manifest results.
- * Mirrors scripts/generate-lighthouse-report.py::generate_lighthouse_md
+ * Generates the Markdown Lighthouse comparison / baseline report.
  */
 export async function generateLighthouseMarkdown(
   manifest: ManifestResult[],

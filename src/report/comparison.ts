@@ -6,7 +6,7 @@ import { extractPath } from './formatter';
 
 /**
  * Parses a production Markdown report into a path → scores map.
- * Mirrors scripts/generate-lighthouse-report.py::parse_prod_report
+ * Parses a production Markdown baseline report into per-path scores.
  */
 export async function parseProdReport(
   productionReportPath: string,

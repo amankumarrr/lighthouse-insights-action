@@ -8,7 +8,7 @@ const BYTES_PER_MB = 1_048_576;
 
 /**
  * Formats a URL to match Lighthouse CI report filenames.
- * Mirrors scripts/generate-lighthouse-report.py::format_url_for_filename
+ * Converts a URL into the LHCI report filename stem.
  */
 export function formatUrlForFilename(url: string): string {
   const withoutProtocol = url.replace('https://', '').replace('http://', '');
@@ -21,7 +21,7 @@ export function formatUrlForFilename(url: string): string {
 
 /**
  * Reads the matching report JSON and sums script-treemap-data node bytes.
- * Mirrors scripts/generate-lighthouse-report.py::get_total_and_unused_bytes_for_url
+ * Reads total and unused transfer bytes for a URL from the LHCI treemap/report.
  */
 export async function getTotalAndUnusedBytesForUrl(
   url: string,

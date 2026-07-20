@@ -92,15 +92,12 @@ src/
   utils/                   # Filesystem, glob, logger helpers
 scripts/
   run-local.ts                    # Local runner / verifier
-  generate-lighthouse-report.py   # Reference implementation (not used at runtime)
 fixtures/
   lighthouseci/                   # Sample LHCI results for offline runs
   prod-lighthouse-report.md       # Baseline used by local:fixture:pr
 docs/
   development.md                  # This file
 ```
-
-Report generation behavior is intentionally aligned with `scripts/generate-lighthouse-report.py`. Do **not** invoke the Python script from the GitHub Action — TypeScript is the production implementation.
 
 ## How the published action runs
 

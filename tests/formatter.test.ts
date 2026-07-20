@@ -39,7 +39,7 @@ describe('extractPath', () => {
 });
 
 describe('score and bundle display', () => {
-  it('formats score deltas like the Python script', () => {
+  it('formats score deltas with arrows', () => {
     expect(getScoreDisplay(90, 5)).toBe('90 (⬇️5)');
     expect(getScoreDisplay(95, -3)).toBe('95 (⬆️3)');
     expect(getScoreDisplay(88, 0)).toBe('88');
@@ -53,7 +53,7 @@ describe('score and bundle display', () => {
     expect(getDisplayText(88, 88)).toBe('88');
   });
 
-  it('formats bundle size deltas like the Python script', () => {
+  it('formats bundle size deltas with arrows', () => {
     expect(getBundleDisplay(1.5, 0.25)).toBe('1.50 MB (⬇️0.25 MB)');
     expect(getBundleDisplay(2.0, -0.5)).toBe('2.00 MB (⬆️0.50 MB)');
     expect(getBundleDisplay(1.25, 0)).toBe('1.25 MB');
