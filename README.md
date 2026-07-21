@@ -317,7 +317,7 @@ jobs:
           paths: |
             /
           production-domain: https://www.example.com
-          staging-domain: https://staging.example.com
+          staging-domain: https://${{ github.head_ref }}.example.com
           comment-on-pr: true
           upload-summary: true
 ```
