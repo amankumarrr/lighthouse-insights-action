@@ -129,6 +129,34 @@ Behavior when **both** `production-domain` and `staging-domain` are set:
 
 No baseline artifact is required for PR deltas when both domains are configured — production is audited in the same PR job and used only for comparison.
 
+Full job example (paths + domains + PR comment):
+
+```yaml
+lighthouse:
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+    pull-requests: write   # required for comment-on-pr
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Chrome
+      id: chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Lighthouse CI
+      id: lighthouse
+      uses: amankumarrr/lighthouse-insights-action@v1
+      env:
+        CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      with:
+        paths: |
+          /
+        production-domain: https://www.example.com
+        staging-domain: https://staging.example.com
+        comment-on-pr: true
+```
+
 `.lighthouserc` is only for **how LHCI runs** when you pass `config-path`.  
 It is **not** used for PR vs production comparison.
 
