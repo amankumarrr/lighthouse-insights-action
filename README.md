@@ -221,6 +221,10 @@ The PR report shows deltas:
 - Scores: `90 (⬆️5)` improved vs prod, `85 (⬇️5)` regressed
 - Bundle size: smaller is ⬇️, larger is ⬆️
 
+Example PR comment (`comment-on-pr: true`):
+
+![Lighthouse PR comment comparing staging scores to production](docs/images/pr-comment-example.png)
+
 If the baseline file is missing on a PR, comparison rows are skipped (warning only).
 
 ### What you must provide on PRs
